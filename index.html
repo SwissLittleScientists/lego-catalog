@@ -1,0 +1,618 @@
+<title>LEGO Education Catalog</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<style>
+  :root{
+    --ink:#1c2340;
+    --ink-soft:#4a5170;
+    --paper:#f6f5f1;
+    --surface:#ffffff;
+    --line:#e4e2da;
+    --accent:#ffc60b;
+    --accent-ink:#3a2c00;
+    --good:#1f9d63;
+    --good-bg:#e4f6ec;
+    --mid:#c47f00;
+    --mid-bg:#fbedd3;
+    --hard:#c23b3b;
+    --hard-bg:#fbe3e2;
+    --chip-bg:#eeece4;
+    --chip-bg-active:#1c2340;
+    --chip-fg-active:#ffffff;
+    --shadow: 0 1px 2px rgba(28,35,64,.06), 0 8px 24px -12px rgba(28,35,64,.18);
+    --radius: 14px;
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --ink:#eef0fb;
+      --ink-soft:#aab0d0;
+      --paper:#14172a;
+      --surface:#1c2038;
+      --line:#2c3050;
+      --accent:#ffc60b;
+      --accent-ink:#241c00;
+      --good:#3ecb8b;
+      --good-bg:#123326;
+      --mid:#e8a83c;
+      --mid-bg:#382a0d;
+      --hard:#f0776f;
+      --hard-bg:#3a1a1a;
+      --chip-bg:#252a48;
+      --chip-bg-active:#ffc60b;
+      --chip-fg-active:#241c00;
+      --shadow: 0 1px 2px rgba(0,0,0,.3), 0 8px 24px -12px rgba(0,0,0,.5);
+    }
+  }
+  :root[data-theme="dark"]{
+    --ink:#eef0fb;
+    --ink-soft:#aab0d0;
+    --paper:#14172a;
+    --surface:#1c2038;
+    --line:#2c3050;
+    --accent:#ffc60b;
+    --accent-ink:#241c00;
+    --good:#3ecb8b;
+    --good-bg:#123326;
+    --mid:#e8a83c;
+    --mid-bg:#382a0d;
+    --hard:#f0776f;
+    --hard-bg:#3a1a1a;
+    --chip-bg:#252a48;
+    --chip-bg-active:#ffc60b;
+    --chip-fg-active:#241c00;
+    --shadow: 0 1px 2px rgba(0,0,0,.3), 0 8px 24px -12px rgba(0,0,0,.5);
+  }
+
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    background:var(--paper);
+    color:var(--ink);
+    font-family:"IBM Plex Sans", -apple-system, "Segoe UI", sans-serif;
+    padding-inline:20px;
+    padding-block: max(20px, env(safe-area-inset-top, 0px)) 48px;
+  }
+  h1,h2,h3{
+    font-family:"Fredoka", "IBM Plex Sans", sans-serif;
+    margin:0;
+    text-wrap:balance;
+  }
+  a{color:inherit;}
+
+  .wrap{max-width:1080px;margin:0 auto;}
+
+  /* ---------- header ---------- */
+  header.top{
+    padding-block:28px 20px;
+    display:flex;
+    flex-wrap:wrap;
+    gap:16px;
+    align-items:flex-end;
+    justify-content:space-between;
+    border-bottom:1px solid var(--line);
+    margin-bottom:24px;
+  }
+  .brand{display:flex; align-items:center; gap:12px;}
+  .brand .mark{
+    width:40px;height:40px;border-radius:10px;
+    background:var(--accent);
+    position:relative;
+    flex:none;
+    box-shadow: inset 0 -3px 0 rgba(0,0,0,.15);
+  }
+  .brand .mark::before, .brand .mark::after{
+    content:"";
+    position:absolute;
+    width:9px;height:9px;border-radius:50%;
+    background:var(--accent-ink);
+    top:9px;
+  }
+  .brand .mark::before{left:9px;}
+  .brand .mark::after{right:9px;}
+  .brand h1{font-size:1.55rem; font-weight:600; letter-spacing:.2px;}
+  .brand p{margin:2px 0 0; color:var(--ink-soft); font-size:.88rem;}
+  .count-pill{
+    font-family:"IBM Plex Sans", sans-serif;
+    font-size:.82rem;
+    color:var(--ink-soft);
+    background:var(--surface);
+    border:1px solid var(--line);
+    padding:7px 14px;
+    border-radius:999px;
+    white-space:nowrap;
+  }
+  .count-pill strong{color:var(--ink); font-variant-numeric:tabular-nums;}
+
+  /* ---------- search + filters ---------- */
+  .controls{
+    background:var(--surface);
+    border:1px solid var(--line);
+    border-radius:var(--radius);
+    box-shadow:var(--shadow);
+    padding:18px 20px 20px;
+    margin-bottom:28px;
+  }
+  .search-row{
+    display:flex;
+    gap:10px;
+    margin-bottom:16px;
+  }
+  .search-row input{
+    flex:1;
+    font:inherit;
+    font-size:.95rem;
+    padding:11px 14px;
+    border-radius:10px;
+    border:1px solid var(--line);
+    background:var(--paper);
+    color:var(--ink);
+  }
+  .search-row input:focus{outline:2px solid var(--accent); outline-offset:1px;}
+  .search-row button{
+    font:inherit;
+    font-size:.88rem;
+    font-weight:600;
+    background:transparent;
+    color:var(--ink-soft);
+    border:1px solid var(--line);
+    border-radius:10px;
+    padding:0 16px;
+    cursor:pointer;
+  }
+  .search-row button:hover{color:var(--ink); border-color:var(--ink-soft);}
+
+  .filter-groups{
+    display:grid;
+    grid-template-columns:repeat(auto-fit, minmax(200px,1fr));
+    gap:16px 24px;
+  }
+  .filter-group h3{
+    font-family:"IBM Plex Sans",sans-serif;
+    font-size:.72rem;
+    font-weight:600;
+    text-transform:uppercase;
+    letter-spacing:.06em;
+    color:var(--ink-soft);
+    margin-bottom:9px;
+  }
+  .chip-row{display:flex; flex-wrap:wrap; gap:7px;}
+  .chip{
+    font:inherit;
+    font-size:.82rem;
+    font-weight:500;
+    padding:6px 13px;
+    border-radius:999px;
+    border:1px solid var(--line);
+    background:var(--chip-bg);
+    color:var(--ink);
+    cursor:pointer;
+    transition:background .12s, color .12s, border-color .12s;
+  }
+  .chip[aria-pressed="true"]{
+    background:var(--chip-bg-active);
+    color:var(--chip-fg-active);
+    border-color:var(--chip-bg-active);
+  }
+  .chip:focus-visible{outline:2px solid var(--accent); outline-offset:2px;}
+
+  /* ---------- results ---------- */
+  .results-head{
+    display:flex; justify-content:space-between; align-items:baseline;
+    margin-bottom:14px; gap:12px; flex-wrap:wrap;
+  }
+  .results-head p{margin:0; color:var(--ink-soft); font-size:.88rem;}
+
+  .grid{
+    display:grid;
+    grid-template-columns:repeat(auto-fill, minmax(270px,1fr));
+    gap:16px;
+  }
+  .card{
+    background:var(--surface);
+    border:1px solid var(--line);
+    border-radius:var(--radius);
+    box-shadow:var(--shadow);
+    padding:18px;
+    display:flex;
+    flex-direction:column;
+    gap:12px;
+  }
+  .card h2{font-size:1.08rem; font-weight:600; line-height:1.3;}
+  .card .desc{
+    font-size:.87rem;
+    color:var(--ink-soft);
+    line-height:1.5;
+    margin:0;
+    flex:1;
+  }
+  .badges{display:flex; flex-wrap:wrap; gap:6px;}
+  .badge{
+    font-size:.74rem;
+    font-weight:600;
+    padding:4px 9px;
+    border-radius:7px;
+    background:var(--chip-bg);
+    color:var(--ink-soft);
+    white-space:nowrap;
+  }
+  .badge.diff-Easy{background:var(--good-bg); color:var(--good);}
+  .badge.diff-Medium{background:var(--mid-bg); color:var(--mid);}
+  .badge.diff-Hard{background:var(--hard-bg); color:var(--hard);}
+  .badge.example{
+    background:transparent;
+    color:var(--ink-soft);
+    border:1px dashed var(--line);
+    font-style:italic;
+  }
+
+  .card footer{
+    display:flex; align-items:center; justify-content:space-between;
+    gap:10px; padding-top:10px; border-top:1px solid var(--line);
+  }
+  .event-tag{font-size:.76rem; color:var(--ink-soft);}
+  .pdf-btn{
+    font:inherit; font-size:.84rem; font-weight:600;
+    text-decoration:none;
+    padding:8px 14px;
+    border-radius:9px;
+    background:var(--ink);
+    color:var(--paper);
+    white-space:nowrap;
+  }
+  .pdf-btn:hover{opacity:.88;}
+  .pdf-btn.disabled{
+    background:transparent;
+    color:var(--ink-soft);
+    border:1px dashed var(--line);
+    cursor:default;
+    pointer-events:none;
+  }
+
+  .empty{
+    text-align:center;
+    padding:56px 20px;
+    color:var(--ink-soft);
+    background:var(--surface);
+    border:1px dashed var(--line);
+    border-radius:var(--radius);
+  }
+  .empty h3{color:var(--ink); margin-bottom:6px; font-size:1.1rem;}
+
+  .note{
+    margin-top:28px;
+    font-size:.82rem;
+    color:var(--ink-soft);
+    background:var(--surface);
+    border:1px solid var(--line);
+    border-radius:var(--radius);
+    padding:14px 16px;
+    line-height:1.55;
+  }
+  .note strong{color:var(--ink);}
+</style>
+
+<div class="wrap">
+  <header class="top">
+    <div class="brand">
+      <div class="mark" aria-hidden="true"></div>
+      <div>
+        <h1>LEGO Education Catalog</h1>
+        <p>Instructions for activities, courses and events &mdash; Little Scientists</p>
+      </div>
+    </div>
+    <div class="count-pill"><strong id="resultCount">0</strong> instructions found</div>
+  </header>
+
+  <section class="controls">
+    <div class="search-row">
+      <input id="searchInput" type="search" placeholder="Search by title or keyword…" aria-label="Search instructions">
+      <button id="resetBtn" type="button">Reset filters</button>
+    </div>
+    <div class="filter-groups">
+      <div class="filter-group">
+        <h3>Age</h3>
+        <div class="chip-row" id="ageChips" data-group="age"></div>
+      </div>
+      <div class="filter-group">
+        <h3>Difficulty</h3>
+        <div class="chip-row" id="diffChips" data-group="difficulty"></div>
+      </div>
+      <div class="filter-group">
+        <h3>Kit used</h3>
+        <div class="chip-row" id="kitChips" data-group="kit"></div>
+      </div>
+      <div class="filter-group">
+        <h3>Language</h3>
+        <div class="chip-row" id="langChips" data-group="language"></div>
+      </div>
+      <div class="filter-group">
+        <h3>Event</h3>
+        <div class="chip-row" id="eventChips" data-group="event"></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="results-head">
+    <p id="resultsSummary">All instructions</p>
+  </section>
+
+  <div class="grid" id="grid"></div>
+  <div class="empty" id="emptyState" hidden>
+    <h3>No instructions found</h3>
+    <p>Try removing a filter or changing your search.</p>
+  </div>
+
+  <p class="note">
+    Cards marked <strong>Example</strong> are placeholder sample instructions. <strong>To add your real PDF instructions</strong>,
+    send them to Claude in this same conversation (or a new one, pointing to this page): they'll be uploaded and the
+    page updated with links to the real files.
+  </p>
+</div>
+
+<script>
+(function(){
+  // ---------- sample data ----------
+  // age: [min, max] recommended years
+  var instructions = [
+    {
+      title: "Smart Traffic Light",
+      kit: "WeDo 2.0",
+      language: "WeDo",
+      difficulty: "Easy",
+      age: [7, 9],
+      event: "Weekly course",
+      desc: "A traffic light that changes color when it detects an obstacle: a first project with a motor and proximity sensor.",
+      pdfUrl: null,
+      isSample: true
+    },
+    {
+      title: "Mini Airport",
+      kit: "WeDo 2.0",
+      language: "WeDo",
+      difficulty: "Easy",
+      age: [7, 9],
+      event: "Summer camp",
+      desc: "Build an airplane with a motorized propeller and a runway; introduces the concept of motor speed.",
+      pdfUrl: null,
+      isSample: true
+    },
+    {
+      title: "Explorer Robot",
+      kit: "Spike Prime",
+      language: "Scratch",
+      difficulty: "Medium",
+      age: [10, 12],
+      event: "Weekly course",
+      desc: "A two-motor rover that avoids obstacles using the ultrasonic sensor, programmed with blocks.",
+      pdfUrl: null,
+      isSample: true
+    },
+    {
+      title: "Grabbing Robotic Arm",
+      kit: "Spike Prime",
+      language: "Scratch",
+      difficulty: "Medium",
+      age: [10, 13],
+      event: "School project",
+      desc: "A mechanical arm with a motorized claw that picks up small objects following a programmed sequence.",
+      pdfUrl: null,
+      isSample: true
+    },
+    {
+      title: "Automatic Weather Station",
+      kit: "Spike Prime",
+      language: "Python",
+      difficulty: "Hard",
+      age: [12, 14],
+      event: "School project",
+      desc: "Reads temperature, light and motion, logging data and plotting a graph, written in Python in the SPIKE App.",
+      pdfUrl: null,
+      isSample: true
+    },
+    {
+      title: "Automated Assembly Line",
+      kit: "Spike Prime",
+      language: "Python",
+      difficulty: "Hard",
+      age: [12, 15],
+      event: "Open Day",
+      desc: "A conveyor belt that automatically sorts pieces by color, controlled by a Python script.",
+      pdfUrl: null,
+      isSample: true
+    },
+    {
+      title: "Dancing Animal",
+      kit: "Essential",
+      language: "WeDo",
+      difficulty: "Easy",
+      age: [5, 7],
+      event: "Themed birthday party",
+      desc: "A friendly little animal that dances at the press of a button: a very first step into motorized building.",
+      pdfUrl: null,
+      isSample: true
+    },
+    {
+      title: "Musical Carousel",
+      kit: "Essential",
+      language: "WeDo",
+      difficulty: "Easy",
+      age: [5, 7],
+      event: "Themed birthday party",
+      desc: "A carousel that spins and plays music when a hand comes near: introduces the motion and sound sensors.",
+      pdfUrl: null,
+      isSample: true
+    },
+    {
+      title: "Robotic Goalkeeper",
+      kit: "Spike Prime",
+      language: "Scratch",
+      difficulty: "Medium",
+      age: [9, 11],
+      event: "Open Day",
+      desc: "A goalkeeper that saves the ball by moving sideways based on the position read by the color sensor.",
+      pdfUrl: null,
+      isSample: true
+    },
+    {
+      title: "Mini Smart House",
+      kit: "WeDo 2.0",
+      language: "Scratch",
+      difficulty: "Medium",
+      age: [8, 10],
+      event: "Weekly course",
+      desc: "Lights and an automatic gate that respond to the tilt sensor and the motion sensor.",
+      pdfUrl: null,
+      isSample: true
+    },
+    {
+      title: "Minion",
+      kit: "WeDo 2.0",
+      language: "WeDo",
+      difficulty: "Easy",
+      age: [4, 7],
+      event: "Workshop 26 September 2026",
+      desc: "A motorized Minion figure that moves thanks to a WeDo motor and belt drive: a fun, easy first build.",
+      pdfUrl: "minion-easy.pdf"
+    }
+  ];
+
+  var AGE_BANDS = [[4,7,"4–7"],[7,9,"7–9"],[9,11,"9–11"],[11,13,"11–13"],[13,15,"13–15"]];
+  var DIFFS = ["Easy","Medium","Hard"];
+
+  function uniqueSorted(values){
+    var seen = {};
+    var out = [];
+    values.forEach(function(v){
+      if(!seen[v]){ seen[v] = true; out.push(v); }
+    });
+    return out.sort();
+  }
+
+  var KITS = uniqueSorted(instructions.map(function(i){ return i.kit; }));
+  var LANGS = uniqueSorted(instructions.map(function(i){ return i.language; }));
+  var EVENTS = uniqueSorted(instructions.map(function(i){ return i.event; }));
+
+  var state = {
+    query: "",
+    age: new Set(),
+    difficulty: new Set(),
+    kit: new Set(),
+    language: new Set(),
+    event: new Set()
+  };
+
+  function makeChips(container, items, group, labelFn){
+    labelFn = labelFn || function(x){ return x; };
+    items.forEach(function(item){
+      var btn = document.createElement("button");
+      btn.type = "button";
+      btn.className = "chip";
+      btn.setAttribute("aria-pressed", "false");
+      btn.textContent = labelFn(item);
+      btn.addEventListener("click", function(){
+        var key = typeof item === "object" ? item.key : item;
+        if(state[group].has(key)){
+          state[group].delete(key);
+          btn.setAttribute("aria-pressed","false");
+        } else {
+          state[group].add(key);
+          btn.setAttribute("aria-pressed","true");
+        }
+        render();
+      });
+      container.appendChild(btn);
+    });
+  }
+
+  makeChips(document.getElementById("ageChips"), AGE_BANDS.map(function(b){ return {key:b[0]+"-"+b[1], min:b[0], max:b[1], label:b[2]}; }), "age", function(b){ return b.label; });
+  makeChips(document.getElementById("diffChips"), DIFFS, "difficulty");
+  makeChips(document.getElementById("kitChips"), KITS, "kit");
+  makeChips(document.getElementById("langChips"), LANGS, "language");
+  makeChips(document.getElementById("eventChips"), EVENTS, "event");
+
+  var searchInput = document.getElementById("searchInput");
+  searchInput.addEventListener("input", function(){
+    state.query = searchInput.value.trim().toLowerCase();
+    render();
+  });
+
+  document.getElementById("resetBtn").addEventListener("click", function(){
+    state.query = "";
+    searchInput.value = "";
+    ["age","difficulty","kit","language","event"].forEach(function(g){ state[g].clear(); });
+    document.querySelectorAll(".chip[aria-pressed='true']").forEach(function(c){ c.setAttribute("aria-pressed","false"); });
+    render();
+  });
+
+  function matchesAge(item){
+    if(state.age.size === 0) return true;
+    var matched = false;
+    state.age.forEach(function(key){
+      var parts = key.split("-");
+      var bMin = parseInt(parts[0],10), bMax = parseInt(parts[1],10);
+      if(item.age[0] <= bMax && item.age[1] >= bMin) matched = true;
+    });
+    return matched;
+  }
+
+  function matchesSet(setObj, value){
+    return setObj.size === 0 || setObj.has(value);
+  }
+
+  function filtered(){
+    return instructions.filter(function(item){
+      if(state.query){
+        var hay = (item.title + " " + item.desc).toLowerCase();
+        if(hay.indexOf(state.query) === -1) return false;
+      }
+      if(!matchesAge(item)) return false;
+      if(!matchesSet(state.difficulty, item.difficulty)) return false;
+      if(!matchesSet(state.kit, item.kit)) return false;
+      if(!matchesSet(state.language, item.language)) return false;
+      if(!matchesSet(state.event, item.event)) return false;
+      return true;
+    });
+  }
+
+  var grid = document.getElementById("grid");
+  var emptyState = document.getElementById("emptyState");
+  var resultCount = document.getElementById("resultCount");
+  var resultsSummary = document.getElementById("resultsSummary");
+
+  function cardHtml(item){
+    var pdf = item.pdfUrl
+      ? '<a class="pdf-btn" href="' + item.pdfUrl + '" target="_blank" rel="noopener">Open PDF</a>'
+      : '<span class="pdf-btn disabled">PDF coming soon</span>';
+    return (
+      '<article class="card">' +
+        '<h2>' + item.title + '</h2>' +
+        '<p class="desc">' + item.desc + '</p>' +
+        '<div class="badges">' +
+          (item.isSample ? '<span class="badge example">Example</span>' : '') +
+          '<span class="badge">' + item.age[0] + '–' + item.age[1] + ' yrs</span>' +
+          '<span class="badge diff-' + item.difficulty + '">' + item.difficulty + '</span>' +
+          '<span class="badge">' + item.kit + '</span>' +
+          '<span class="badge">' + item.language + '</span>' +
+        '</div>' +
+        '<footer>' +
+          '<span class="event-tag">' + item.event + '</span>' +
+          pdf +
+        '</footer>' +
+      '</article>'
+    );
+  }
+
+  function render(){
+    var items = filtered();
+    resultCount.textContent = items.length;
+    resultsSummary.textContent = items.length === instructions.length
+      ? "All instructions"
+      : items.length + " of " + instructions.length + " instructions";
+    grid.innerHTML = items.map(cardHtml).join("");
+    emptyState.hidden = items.length !== 0;
+    grid.hidden = items.length === 0;
+  }
+
+  render();
+})();
+</script>
