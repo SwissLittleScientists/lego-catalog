@@ -249,7 +249,7 @@
     display:flex; align-items:center; justify-content:space-between;
     gap:10px; padding-top:10px; border-top:1px solid var(--line);
   }
-  .event-tag{font-size:.76rem; color:var(--ink-soft);}
+  .theme-tag{font-size:.76rem; color:var(--ink-soft);}
   .pdf-btn{
     font:inherit; font-size:.84rem; font-weight:600;
     text-decoration:none;
@@ -289,9 +289,86 @@
     line-height:1.55;
   }
   .note strong{color:var(--ink);}
+
+  /* ---------- lock screen ---------- */
+  #lockScreen{
+    position:fixed; inset:0;
+    background:var(--paper);
+    display:flex; align-items:center; justify-content:center;
+    padding:20px;
+    z-index:100;
+  }
+  .lock-card{
+    background:var(--surface);
+    border:1px solid var(--line);
+    border-radius:var(--radius);
+    box-shadow:var(--shadow);
+    padding:32px 28px;
+    max-width:340px;
+    width:100%;
+    text-align:center;
+  }
+  .lock-card .mark{
+    width:44px;height:44px;border-radius:11px;
+    background:var(--accent);
+    margin:0 auto 16px;
+    position:relative;
+  }
+  .lock-card .mark::before, .lock-card .mark::after{
+    content:"";
+    position:absolute;
+    width:10px;height:10px;border-radius:50%;
+    background:var(--accent-ink);
+    top:10px;
+  }
+  .lock-card .mark::before{left:10px;}
+  .lock-card .mark::after{right:10px;}
+  .lock-card h2{font-size:1.15rem; margin-bottom:6px;}
+  .lock-card p{color:var(--ink-soft); font-size:.86rem; margin:0 0 18px;}
+  .lock-card input{
+    width:100%;
+    font:inherit;
+    font-size:.95rem;
+    padding:11px 14px;
+    border-radius:10px;
+    border:1px solid var(--line);
+    background:var(--paper);
+    color:var(--ink);
+    margin-bottom:10px;
+    text-align:center;
+  }
+  .lock-card input:focus{outline:2px solid var(--accent); outline-offset:1px;}
+  .lock-card button{
+    width:100%;
+    font:inherit; font-size:.92rem; font-weight:600;
+    padding:11px 14px;
+    border-radius:10px;
+    border:none;
+    background:var(--ink);
+    color:var(--paper);
+    cursor:pointer;
+  }
+  .lock-card button:hover{opacity:.9;}
+  .lock-error{
+    color:var(--hard);
+    font-size:.82rem;
+    margin-top:10px;
+    min-height:1.2em;
+  }
 </style>
 
-<div class="wrap">
+<div id="lockScreen">
+  <form class="lock-card" id="lockForm" autocomplete="off">
+    <div class="mark" aria-hidden="true"></div>
+    <h2>LEGO Education Catalog</h2>
+    <p>Enter the access password to view the instructions.</p>
+    <input id="lockInput" type="password" placeholder="Password" autocomplete="off" autocapitalize="off" spellcheck="false" inputmode="text">
+    <button type="submit">Unlock</button>
+    <p class="lock-error" id="lockError"></p>
+  </form>
+</div>
+
+<div class="wrap" id="appRoot" hidden>
   <header class="top">
     <div class="brand">
       <div class="mark" aria-hidden="true"></div>
@@ -326,8 +403,8 @@
         <div class="chip-row" id="langChips" data-group="language"></div>
       </div>
       <div class="filter-group">
-        <h3>Event</h3>
-        <div class="chip-row" id="eventChips" data-group="event"></div>
+        <h3>Theme</h3>
+        <div class="chip-row" id="themeChips" data-group="theme"></div>
       </div>
     </div>
   </section>
@@ -338,16 +415,76 @@
 
   <div class="grid" id="grid"></div>
   <div class="empty" id="emptyState" hidden>
-    <h3>No instructions found</h3>
-    <p>Try removing a filter or changing your search.</p>
+    <h3 id="emptyTitle">No instructions found</h3>
+    <p id="emptyHint">Try removing a filter or changing your search.</p>
   </div>
 
   <p class="note">
-    Cards marked <strong>Example</strong> are placeholder sample instructions. <strong>To add your real PDF instructions</strong>,
-    send them to Claude in this same conversation (or a new one, pointing to this page): they'll be uploaded and the
-    page updated with links to the real files.
+    <strong>To add PDF instructions</strong>, send them to Claude in this same conversation
+    (or a new one, pointing to this page): they'll be uploaded and the page updated with
+    links to the real files.
   </p>
 </div>
+
+<script>
+(function(){
+  var EXPECTED_HASH = "b9df39710d1c4faa09d2a5c91ae2d18c214e80f342f406e65d2f6f2ab3d0f4b5";
+  var STORAGE_KEY = "legoCatalogAuthHash";
+
+  var lockScreen = document.getElementById("lockScreen");
+  var appRoot = document.getElementById("appRoot");
+  var lockForm = document.getElementById("lockForm");
+  var lockInput = document.getElementById("lockInput");
+  var lockError = document.getElementById("lockError");
+
+  function sha256Hex(text){
+    var enc = new TextEncoder().encode(text);
+    return crypto.subtle.digest("SHA-256", enc).then(function(buf){
+      var bytes = Array.from(new Uint8Array(buf));
+      return bytes.map(function(b){ return b.toString(16).padStart(2, "0"); }).join("");
+    });
+  }
+
+  function unlock(){
+    lockScreen.style.display = "none";
+    appRoot.hidden = false;
+  }
+
+  function lock(){
+    lockScreen.style.display = "flex";
+    appRoot.hidden = true;
+  }
+
+  var storedHash = null;
+  try { storedHash = localStorage.getItem(STORAGE_KEY); } catch(e) {}
+
+  if (storedHash === EXPECTED_HASH){
+    unlock();
+  } else {
+    lock();
+    if (lockInput) { setTimeout(function(){ lockInput.focus(); }, 50); }
+  }
+
+  if (lockForm){
+    lockForm.addEventListener("submit", function(ev){
+      ev.preventDefault();
+      var value = (lockInput.value || "").trim();
+      if (!value){ return; }
+      sha256Hex(value).then(function(hash){
+        if (hash === EXPECTED_HASH){
+          try { localStorage.setItem(STORAGE_KEY, hash); } catch(e) {}
+          lockError.textContent = "";
+          unlock();
+        } else {
+          lockError.textContent = "Incorrect password. Please try again.";
+          lockInput.value = "";
+          lockInput.focus();
+        }
+      });
+    });
+  }
+})();
+</script>
 
 <script>
 (function(){
@@ -355,124 +492,194 @@
   // age: [min, max] recommended years
   var instructions = [
     {
-      title: "Smart Traffic Light",
+      title: "Bus",
       kit: "WeDo 2.0",
-      language: "WeDo",
-      difficulty: "Easy",
-      age: [7, 9],
-      event: "Weekly course",
-      desc: "A traffic light that changes color when it detects an obstacle: a first project with a motor and proximity sensor.",
-      pdfUrl: null,
-      isSample: true
+      language: ["WeDo", "Scratch"],
+      difficulty: "Medium",
+      age: [7, 11],
+      theme: "City Builders",
+      desc: "A motorized bus model that drives forward using a WeDo motor — a fun vehicle build.",
+      pdfUrl: "bus.pdf"
     },
     {
-      title: "Mini Airport",
+      title: "Crane",
       kit: "WeDo 2.0",
-      language: "WeDo",
-      difficulty: "Easy",
-      age: [7, 9],
-      event: "Summer camp",
-      desc: "Build an airplane with a motorized propeller and a runway; introduces the concept of motor speed.",
-      pdfUrl: null,
-      isSample: true
-    },
-    {
-      title: "Explorer Robot",
-      kit: "Spike Prime",
-      language: "Scratch",
+      language: ["WeDo", "Scratch"],
       difficulty: "Medium",
-      age: [10, 12],
-      event: "Weekly course",
-      desc: "A two-motor rover that avoids obstacles using the ultrasonic sensor, programmed with blocks.",
-      pdfUrl: null,
-      isSample: true
+      age: [7, 11],
+      theme: "Epic Lego",
+      desc: "A crane model with a motorized rotating arm for lifting and moving small loads.",
+      pdfUrl: "crane.pdf"
     },
     {
-      title: "Grabbing Robotic Arm",
-      kit: "Spike Prime",
-      language: "Scratch",
-      difficulty: "Medium",
-      age: [10, 13],
-      event: "School project",
-      desc: "A mechanical arm with a motorized claw that picks up small objects following a programmed sequence.",
-      pdfUrl: null,
-      isSample: true
-    },
-    {
-      title: "Automatic Weather Station",
-      kit: "Spike Prime",
-      language: "Python",
-      difficulty: "Hard",
-      age: [12, 14],
-      event: "School project",
-      desc: "Reads temperature, light and motion, logging data and plotting a graph, written in Python in the SPIKE App.",
-      pdfUrl: null,
-      isSample: true
-    },
-    {
-      title: "Automated Assembly Line",
-      kit: "Spike Prime",
-      language: "Python",
-      difficulty: "Hard",
-      age: [12, 15],
-      event: "Open Day",
-      desc: "A conveyor belt that automatically sorts pieces by color, controlled by a Python script.",
-      pdfUrl: null,
-      isSample: true
-    },
-    {
-      title: "Dancing Animal",
-      kit: "Essential",
-      language: "WeDo",
-      difficulty: "Easy",
-      age: [5, 7],
-      event: "Themed birthday party",
-      desc: "A friendly little animal that dances at the press of a button: a very first step into motorized building.",
-      pdfUrl: null,
-      isSample: true
-    },
-    {
-      title: "Musical Carousel",
-      kit: "Essential",
-      language: "WeDo",
-      difficulty: "Easy",
-      age: [5, 7],
-      event: "Themed birthday party",
-      desc: "A carousel that spins and plays music when a hand comes near: introduces the motion and sound sensors.",
-      pdfUrl: null,
-      isSample: true
-    },
-    {
-      title: "Robotic Goalkeeper",
-      kit: "Spike Prime",
-      language: "Scratch",
-      difficulty: "Medium",
-      age: [9, 11],
-      event: "Open Day",
-      desc: "A goalkeeper that saves the ball by moving sideways based on the position read by the color sensor.",
-      pdfUrl: null,
-      isSample: true
-    },
-    {
-      title: "Mini Smart House",
+      title: "Crane Car",
       kit: "WeDo 2.0",
-      language: "Scratch",
+      language: ["WeDo", "Scratch"],
       difficulty: "Medium",
-      age: [8, 10],
-      event: "Weekly course",
-      desc: "Lights and an automatic gate that respond to the tilt sensor and the motion sensor.",
-      pdfUrl: null,
-      isSample: true
+      age: [7, 11],
+      theme: "Epic Lego",
+      desc: "A mobile crane on wheels, combining a driving motor with a lifting arm.",
+      pdfUrl: "crane-car.pdf"
     },
     {
-      title: "Minion",
+      title: "Flower",
       kit: "WeDo 2.0",
-      language: "WeDo",
+      language: ["WeDo"],
       difficulty: "Easy",
       age: [4, 7],
-      event: "Workshop 26 September 2026",
-      desc: "A motorized Minion figure that moves thanks to a WeDo motor and belt drive: a fun, easy first build.",
-      pdfUrl: "minion-easy.pdf"
+      theme: "Epic Lego",
+      desc: "A flower that opens and closes its petals using a WeDo motor — a gentle first mechanism build.",
+      pdfUrl: "flower.pdf"
+    },
+    {
+      title: "Space Game",
+      kit: "WeDo 2.0",
+      language: ["WeDo"],
+      difficulty: "Hard",
+      age: [9, 11],
+      theme: "Space",
+      desc: "A space-themed challenge build combining motors and sensors for an interactive game.",
+      pdfUrl: "space-game.pdf"
+    },
+    {
+      title: "Skate",
+      kit: "WeDo 2.0",
+      language: ["WeDo"],
+      difficulty: "Easy",
+      age: [4, 7],
+      theme: "Epic Lego",
+      desc: "A skateboard-style model that moves forward, powered by a WeDo motor.",
+      pdfUrl: "skate.pdf"
+    },
+    {
+      title: "2 Motors Car",
+      kit: "WeDo 2.0",
+      language: ["WeDo"],
+      difficulty: "Medium",
+      age: [7, 11],
+      theme: "Epic Lego",
+      desc: "A car model driven by two independent WeDo motors for more advanced control.",
+      pdfUrl: "2-motors-car.pdf"
+    },
+    {
+      title: "Milo 1",
+      kit: "WeDo 2.0",
+      language: ["WeDo"],
+      difficulty: "Easy",
+      age: [4, 7],
+      theme: "Space",
+      desc: "The first Milo the robot build: a friendly moving character powered by a WeDo motor.",
+      pdfUrl: "milo-1.pdf"
+    },
+    {
+      title: "Milo 2 – Distance Sensor",
+      kit: "WeDo 2.0",
+      language: ["WeDo"],
+      difficulty: "Easy",
+      age: [4, 7],
+      theme: "Space",
+      desc: "Milo the robot upgraded with a distance sensor that reacts when something comes close.",
+      pdfUrl: "milo-2-distance-sensor.pdf"
+    },
+    {
+      title: "Milo 3 – Tilt Sensor",
+      kit: "WeDo 2.0",
+      language: ["WeDo"],
+      difficulty: "Easy",
+      age: [4, 7],
+      theme: "Space",
+      desc: "Milo the robot upgraded with a tilt sensor that reacts to movement and orientation.",
+      pdfUrl: "milo-3-tilt-sensor.pdf"
+    },
+    {
+      title: "Fan",
+      kit: "WeDo 2.0",
+      language: ["WeDo"],
+      difficulty: "Easy",
+      age: [4, 7],
+      theme: "Space",
+      desc: "A working fan model with spinning blades, powered by a WeDo motor.",
+      pdfUrl: "fan.pdf"
+    },
+    {
+      title: "Spy Robot",
+      kit: "WeDo 2.0",
+      language: ["WeDo"],
+      difficulty: "Easy",
+      age: [4, 7],
+      theme: "Space",
+      desc: "A robot on wheels that can be programmed to move and react like a little spy.",
+      pdfUrl: "spy-robot.pdf"
+    },
+    {
+      title: "Duck",
+      kit: "WeDo 2.0",
+      language: ["WeDo"],
+      difficulty: "Easy",
+      age: [4, 7],
+      theme: "Epic Lego",
+      desc: "A duck model that waddles using a WeDo motor — a playful beginner build.",
+      pdfUrl: "duck.pdf"
+    },
+    {
+      title: "Printer",
+      kit: "WeDo 2.0",
+      language: ["WeDo"],
+      difficulty: "Hard",
+      age: [9, 11],
+      theme: "Epic Lego",
+      desc: "A model that mimics a printer's moving mechanism, powered by a WeDo motor.",
+      pdfUrl: "printer.pdf"
+    },
+    {
+      title: "Ski Lift",
+      kit: "WeDo 2.0",
+      language: ["WeDo", "Scratch"],
+      difficulty: "Hard",
+      age: [9, 11],
+      theme: "Epic Lego",
+      desc: "A working ski lift model with cabins that move along a cable, driven by a motor.",
+      pdfUrl: "skilift.pdf"
+    },
+    {
+      title: "Helicopter",
+      kit: "WeDo 2.0",
+      language: ["Scratch"],
+      difficulty: "Medium",
+      age: [7, 11],
+      theme: "City Builders",
+      desc: "A helicopter model with spinning rotor blades, programmed in Scratch.",
+      pdfUrl: "helicopter.pdf"
+    },
+    {
+      title: "Tesla",
+      kit: "WeDo 2.0",
+      language: ["WeDo", "Scratch"],
+      difficulty: "Medium",
+      age: [7, 11],
+      theme: "City Builders",
+      desc: "A car model inspired by a Tesla, driven by a WeDo motor and programmable in WeDo or Scratch.",
+      pdfUrl: "tesla.pdf"
+    },
+    {
+      title: "Moon Base",
+      kit: "WeDo 2.0",
+      language: ["WeDo", "Scratch"],
+      difficulty: "Medium",
+      age: [7, 11],
+      theme: "Space",
+      desc: "A lunar base model with a moving element, part of a space exploration theme.",
+      pdfUrl: "moon-base.pdf"
+    },
+    {
+      title: "Robotic Arm",
+      kit: "WeDo 2.0",
+      language: ["WeDo", "Scratch"],
+      difficulty: "Hard",
+      age: [9, 11],
+      theme: "Space",
+      desc: "A robotic arm that can be programmed to move and grab small objects.",
+      pdfUrl: "robotic-arm.pdf"
     }
   ];
 
@@ -489,8 +696,8 @@
   }
 
   var KITS = uniqueSorted(instructions.map(function(i){ return i.kit; }));
-  var LANGS = uniqueSorted(instructions.map(function(i){ return i.language; }));
-  var EVENTS = uniqueSorted(instructions.map(function(i){ return i.event; }));
+  var LANGS = uniqueSorted(instructions.reduce(function(acc,i){ return acc.concat(i.language); }, []));
+  var THEMES = uniqueSorted(instructions.map(function(i){ return i.theme; }).filter(Boolean));
 
   var state = {
     query: "",
@@ -498,7 +705,7 @@
     difficulty: new Set(),
     kit: new Set(),
     language: new Set(),
-    event: new Set()
+    theme: new Set()
   };
 
   function makeChips(container, items, group, labelFn){
@@ -528,7 +735,7 @@
   makeChips(document.getElementById("diffChips"), DIFFS, "difficulty");
   makeChips(document.getElementById("kitChips"), KITS, "kit");
   makeChips(document.getElementById("langChips"), LANGS, "language");
-  makeChips(document.getElementById("eventChips"), EVENTS, "event");
+  makeChips(document.getElementById("themeChips"), THEMES, "theme");
 
   var searchInput = document.getElementById("searchInput");
   searchInput.addEventListener("input", function(){
@@ -539,7 +746,7 @@
   document.getElementById("resetBtn").addEventListener("click", function(){
     state.query = "";
     searchInput.value = "";
-    ["age","difficulty","kit","language","event"].forEach(function(g){ state[g].clear(); });
+    ["age","difficulty","kit","language","theme"].forEach(function(g){ state[g].clear(); });
     document.querySelectorAll(".chip[aria-pressed='true']").forEach(function(c){ c.setAttribute("aria-pressed","false"); });
     render();
   });
@@ -559,6 +766,10 @@
     return setObj.size === 0 || setObj.has(value);
   }
 
+  function matchesAny(setObj, values){
+    return setObj.size === 0 || values.some(function(v){ return setObj.has(v); });
+  }
+
   function filtered(){
     return instructions.filter(function(item){
       if(state.query){
@@ -568,14 +779,16 @@
       if(!matchesAge(item)) return false;
       if(!matchesSet(state.difficulty, item.difficulty)) return false;
       if(!matchesSet(state.kit, item.kit)) return false;
-      if(!matchesSet(state.language, item.language)) return false;
-      if(!matchesSet(state.event, item.event)) return false;
+      if(!matchesAny(state.language, item.language)) return false;
+      if(!matchesSet(state.theme, item.theme)) return false;
       return true;
     });
   }
 
   var grid = document.getElementById("grid");
   var emptyState = document.getElementById("emptyState");
+  var emptyTitle = document.getElementById("emptyTitle");
+  var emptyHint = document.getElementById("emptyHint");
   var resultCount = document.getElementById("resultCount");
   var resultsSummary = document.getElementById("resultsSummary");
 
@@ -592,10 +805,10 @@
           '<span class="badge">' + item.age[0] + '–' + item.age[1] + ' yrs</span>' +
           '<span class="badge diff-' + item.difficulty + '">' + item.difficulty + '</span>' +
           '<span class="badge">' + item.kit + '</span>' +
-          '<span class="badge">' + item.language + '</span>' +
+          item.language.map(function(l){ return '<span class="badge">' + l + '</span>'; }).join('') +
         '</div>' +
         '<footer>' +
-          '<span class="event-tag">' + item.event + '</span>' +
+          (item.theme ? '<span class="theme-tag">' + item.theme + '</span>' : '<span></span>') +
           pdf +
         '</footer>' +
       '</article>'
@@ -611,6 +824,15 @@
     grid.innerHTML = items.map(cardHtml).join("");
     emptyState.hidden = items.length !== 0;
     grid.hidden = items.length === 0;
+    if (items.length === 0){
+      if (instructions.length === 0){
+        emptyTitle.textContent = "No instructions yet";
+        emptyHint.textContent = "Send PDF instructions to Claude to start filling this catalog.";
+      } else {
+        emptyTitle.textContent = "No instructions found";
+        emptyHint.textContent = "Try removing a filter or changing your search.";
+      }
+    }
   }
 
   render();
