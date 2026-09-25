@@ -458,11 +458,40 @@
   var storedHash = null;
   try { storedHash = localStorage.getItem(STORAGE_KEY); } catch(e) {}
 
-  if (storedHash === EXPECTED_HASH){
-    unlock();
-  } else {
+  // Auto-unlock via ?key=<password> in the URL (used by the QR code)
+  var urlKey = null;
+  try { urlKey = new URLSearchParams(window.location.search).get("key"); } catch(e) {}
+
+  function cleanUrl(){
+    try {
+      var params = new URLSearchParams(window.location.search);
+      params.delete("key");
+      var qs = params.toString();
+      history.replaceState(null, "", window.location.pathname + (qs ? "?" + qs : "") + window.location.hash);
+    } catch(e) {}
+  }
+
+  function showLock(){
     lock();
     if (lockInput) { setTimeout(function(){ lockInput.focus(); }, 50); }
+  }
+
+  if (storedHash === EXPECTED_HASH){
+    unlock();
+    if (urlKey !== null) { cleanUrl(); }
+  } else if (urlKey){
+    lock();
+    sha256Hex(urlKey.trim()).then(function(hash){
+      cleanUrl();
+      if (hash === EXPECTED_HASH){
+        try { localStorage.setItem(STORAGE_KEY, hash); } catch(e) {}
+        unlock();
+      } else {
+        showLock();
+      }
+    }).catch(function(){ cleanUrl(); showLock(); });
+  } else {
+    showLock();
   }
 
   if (lockForm){
