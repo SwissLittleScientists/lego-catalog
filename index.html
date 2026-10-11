@@ -743,6 +743,72 @@
       theme: "Space",
       desc: "A robotic arm that can be programmed to move and grab small objects.",
       pdfs: {"English": "robotic-arm.pdf"}
+    },
+    {
+      title: "Space Invaders",
+      platform: "micro:bit",
+      kit: "micro:bit",
+      language: ["MakeCode"],
+      difficulty: "Medium",
+      age: [9, 11],
+      theme: "Game Design",
+      desc: "Code the A and B buttons to move a spaceship and fire lasers at an alien ship in this classic arcade game (Lesson 1).",
+      pdfs: {"English": "microbit-space-invaders-en.pdf", "German": "microbit-space-invaders-de.pdf"}
+    },
+    {
+      title: "Flappy Bird",
+      platform: "micro:bit",
+      kit: "micro:bit",
+      language: ["MakeCode"],
+      difficulty: "Medium",
+      age: [9, 11],
+      theme: "Game Design",
+      desc: "Guide your LED through the gaps in falling obstacles using buttons A and B. Touch an obstacle and it's game over (Lesson 2).",
+      pdfs: {"English": "microbit-flappy-bird-en.pdf", "German": "microbit-flappy-bird-de.pdf"}
+    },
+    {
+      title: "Mario Kart",
+      platform: "micro:bit",
+      kit: "micro:bit",
+      language: ["MakeCode"],
+      difficulty: "Medium",
+      age: [9, 11],
+      theme: "Game Design",
+      desc: "Steer Mario by tilting the micro:bit and collect flashing coins in a racing game (Lesson 3).",
+      pdfs: {"English": "microbit-mario-kart-en.pdf", "German": "microbit-mario-kart-de.pdf"}
+    },
+    {
+      title: "Pacman",
+      platform: "micro:bit",
+      kit: "micro:bit",
+      language: ["MakeCode"],
+      difficulty: "Medium",
+      age: [9, 11],
+      theme: "Game Design",
+      desc: "Tilt the micro:bit to move Pac-Man, eat the flashing pac-pills and avoid the ghost (Lesson 4).",
+      pdfs: {"English": "microbit-pacman-en.pdf", "German": "microbit-pacman-de.pdf"}
+    },
+    {
+      title: "Frankenstein",
+      platform: "micro:bit",
+      kit: "micro:bit",
+      language: ["MakeCode"],
+      difficulty: "Medium",
+      age: [9, 11],
+      theme: "Robotics",
+      desc: "Build a paper Frankenstein with a servo motor and the micro:bit to bring it to life (Module 3, Lesson 4).",
+      pdfs: {"English": "microbit-frankenstein-en.pdf"}
+    },
+    {
+      title: "Hardware – LED and Motor Minigolf",
+      platform: "micro:bit",
+      kit: "micro:bit",
+      language: ["MakeCode"],
+      difficulty: "Medium",
+      age: [9, 11],
+      theme: "Robotics",
+      desc: "Connect an LED and an expansion board to the micro:bit and program them: the hardware lessons of the Minigolf challenge (Module 2).",
+      pdfs: {"English": "microbit-hardware-en.pdf", "German": "microbit-hardware-de.pdf"}
     }
   ];
 
@@ -763,7 +829,7 @@
   var DOC_LANGS = ["English","German","Italian"];
   var KITS_BY = {
     "LEGO":["WeDo 2.0","SPIKE Prime","SPIKE Essential"],
-    "micro:bit":["micro:bit V2"],
+    "micro:bit":["micro:bit"],
     "Makey Makey":["Makey Makey Classic"],
     "Arduino":["Arduino Uno"],
     "Scratch":["No hardware"],"ScratchJr":["No hardware"],"Python":["No hardware"],"JavaScript":["No hardware"]
@@ -777,7 +843,7 @@
   };
   var THEMES_BY = {
     "LEGO":["City Builders","Epic Lego","Space"],
-    "micro:bit":["Module 3 – Robotics","Module 4 – Video games"]
+    "micro:bit":["Game Design","Robotics"]
   };
   function fixed(map){
     var out = [];
