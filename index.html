@@ -382,6 +382,10 @@
   .preview-banner{background:var(--accent);color:var(--accent-ink);font-size:.84rem;font-weight:600;text-align:center;padding:8px 12px;border-radius:10px;margin-bottom:16px;}
   .filter-group[hidden]{display:none;}
   .pdf-group{display:flex;gap:6px;}
+  .chip.is-empty{background:transparent;color:var(--ink-soft);border-style:dashed;}
+  .chip.is-empty[aria-pressed="true"]{background:var(--chip-bg-active);color:var(--chip-fg-active);border-style:solid;}
+  .tile.is-empty{background:transparent;box-shadow:none;border-style:dashed;}
+  .tile.is-empty .glyph{opacity:.55;}
   .pdf-btn.small{padding:8px 11px;}
 </style>
 
@@ -756,6 +760,34 @@
     {name:"JavaScript",glyph:"JS",color:"#a58a00"}
   ];
 
+  var DOC_LANGS = ["English","German","Italian"];
+  var KITS_BY = {
+    "LEGO":["WeDo 2.0","SPIKE Prime","SPIKE Essential"],
+    "micro:bit":["micro:bit V2"],
+    "Makey Makey":["Makey Makey Classic"],
+    "Arduino":["Arduino Uno"],
+    "Scratch":["No hardware"],"ScratchJr":["No hardware"],"Python":["No hardware"],"JavaScript":["No hardware"]
+  };
+  var PROG_BY = {
+    "LEGO":["WeDo","Scratch","Python"],
+    "micro:bit":["MakeCode","Python","JavaScript"],
+    "Makey Makey":["Scratch"],
+    "Arduino":["Arduino C++"],
+    "Scratch":["Scratch"],"ScratchJr":["ScratchJr"],"Python":["Python"],"JavaScript":["JavaScript"]
+  };
+  var THEMES_BY = {
+    "LEGO":["City Builders","Epic Lego","Space"],
+    "micro:bit":["Module 3 – Robotics","Module 4 – Video games"]
+  };
+  function fixed(map){
+    var out = [];
+    PLATFORMS.forEach(function(p){
+      if(state.platform && state.platform !== p.name) return;
+      (map[p.name] || []).forEach(function(v){ out.push(v); });
+    });
+    return out;
+  }
+
   function uniqueSorted(values){
     var seen = {}, out = [];
     values.forEach(function(v){ if(v && !seen[v]){ seen[v] = true; out.push(v); } });
@@ -769,7 +801,7 @@
 
   function inPlatform(item){ return !state.platform || item.platform === state.platform; }
 
-  function makeChips(container, items, group){
+  function makeChips(container, items, group, pool){
     container.innerHTML = "";
     items.forEach(function(item){
       var key = typeof item === "object" ? item.key : item;
@@ -779,6 +811,7 @@
       btn.className = "chip";
       btn.setAttribute("aria-pressed", state[group].has(key) ? "true" : "false");
       btn.textContent = label;
+      if(pool && countFor(pool, group === "docLang" ? "docLang" : group, key) === 0) btn.className += " is-empty";
       btn.addEventListener("click", function(){
         if(state[group].has(key)){ state[group].delete(key); btn.setAttribute("aria-pressed","false"); }
         else { state[group].add(key); btn.setAttribute("aria-pressed","true"); }
@@ -788,21 +821,36 @@
     });
   }
 
+  function countFor(pool, group, value){
+    return pool.filter(function(i){
+      if(group === "kit") return i.kit === value;
+      if(group === "theme") return i.theme === value;
+      if(group === "language") return i.language.indexOf(value) !== -1;
+      return Object.keys(i.pdfs).indexOf(value) !== -1;
+    }).length;
+  }
+
+  function mergeUnique(a, b){
+    var seen = {}, out = [];
+    a.concat(b).forEach(function(v){ if(v && !seen[v]){ seen[v] = true; out.push(v); } });
+    return out;
+  }
+
   function rebuildChips(){
     var pool = instructions.filter(inPlatform);
-    var kits = uniqueSorted(pool.map(function(i){ return i.kit; }));
-    var langs = uniqueSorted(pool.reduce(function(a,i){ return a.concat(i.language); }, []));
-    var themes = uniqueSorted(pool.map(function(i){ return i.theme; }));
-    var docLangs = uniqueSorted(pool.reduce(function(a,i){ return a.concat(Object.keys(i.pdfs)); }, []));
+    var kits = mergeUnique(fixed(KITS_BY), uniqueSorted(pool.map(function(i){ return i.kit; })));
+    var langs = mergeUnique(fixed(PROG_BY), uniqueSorted(pool.reduce(function(a,i){ return a.concat(i.language); }, [])));
+    var themes = mergeUnique(fixed(THEMES_BY), uniqueSorted(pool.map(function(i){ return i.theme; })));
+    var docLangs = mergeUnique(DOC_LANGS, uniqueSorted(pool.reduce(function(a,i){ return a.concat(Object.keys(i.pdfs)); }, [])));
     ["kit","language","docLang","theme"].forEach(function(g){ state[g].clear(); });
-    makeChips(document.getElementById("kitChips"), kits, "kit");
-    makeChips(document.getElementById("langChips"), langs, "language");
-    makeChips(document.getElementById("docLangChips"), docLangs, "docLang");
-    makeChips(document.getElementById("themeChips"), themes, "theme");
-    document.getElementById("kitGroup").hidden = kits.length < 2;
-    document.getElementById("langGroup").hidden = langs.length < 2;
-    document.getElementById("docLangGroup").hidden = docLangs.length < 2;
-    document.getElementById("themeGroup").hidden = themes.length < 2;
+    makeChips(document.getElementById("kitChips"), kits, "kit", pool);
+    makeChips(document.getElementById("langChips"), langs, "language", pool);
+    makeChips(document.getElementById("docLangChips"), docLangs, "docLang", pool);
+    makeChips(document.getElementById("themeChips"), themes, "theme", pool);
+    document.getElementById("kitGroup").hidden = kits.length < 1;
+    document.getElementById("langGroup").hidden = langs.length < 1;
+    document.getElementById("docLangGroup").hidden = false;
+    document.getElementById("themeGroup").hidden = themes.length < 1;
   }
 
   function buildTiles(){
@@ -812,7 +860,7 @@
     var tiles = [all];
     PLATFORMS.forEach(function(p){
       var n = instructions.filter(function(i){ return i.platform === p.name; }).length;
-      if(n > 0) tiles.push({name:p.name,label:p.name,glyph:p.glyph,color:p.color,n:n});
+      tiles.push({name:p.name,label:p.name,glyph:p.glyph,color:p.color,n:n});
     });
     tiles.forEach(function(t){
       var b = document.createElement("button");
@@ -821,7 +869,8 @@
       b.setAttribute("aria-pressed", state.platform === t.name ? "true" : "false");
       b.innerHTML = '<span class="glyph" style="background:' + t.color + '">' + t.glyph + '</span>' +
         '<span class="t-name">' + t.label + '</span>' +
-        '<span class="t-count">' + t.n + (t.n === 1 ? ' instruction' : ' instructions') + '</span>';
+        '<span class="t-count">' + (t.n === 0 ? 'Coming soon' : t.n + (t.n === 1 ? ' instruction' : ' instructions')) + '</span>';
+      if(t.n === 0) b.className += " is-empty";
       b.addEventListener("click", function(){
         state.platform = t.name;
         buildTiles();
@@ -918,6 +967,15 @@
     grid.innerHTML = items.map(cardHtml).join("");
     emptyState.hidden = items.length !== 0;
     grid.hidden = items.length === 0;
+    if(items.length === 0){
+      if(total === 0){
+        document.getElementById("emptyTitle").textContent = "Coming soon";
+        document.getElementById("emptyHint").textContent = "Instructions for " + state.platform + " are being prepared.";
+      } else {
+        document.getElementById("emptyTitle").textContent = "No instructions found";
+        document.getElementById("emptyHint").textContent = "Try removing a filter or changing your search.";
+      }
+    }
   }
 
   document.addEventListener("click", function(e){ var a=e.target.closest("a.pdf-btn"); if(a && false) e.preventDefault(); });
