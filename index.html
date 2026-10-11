@@ -1,4 +1,6 @@
-<title>LEGO Education Catalog</title>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Little Scientists Library</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
 <style>
@@ -355,12 +357,38 @@
     margin-top:10px;
     min-height:1.2em;
   }
+
+  /* ---------- platform tiles ---------- */
+  .tiles-label{font-size:.72rem;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:var(--ink-soft);margin:0 0 10px;}
+  .tiles{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:12px;margin-bottom:24px;}
+  .tile{
+    font:inherit;text-align:left;cursor:pointer;
+    background:var(--surface);color:var(--ink);
+    border:1px solid var(--line);border-radius:var(--radius);
+    box-shadow:var(--shadow);padding:14px;
+    display:flex;flex-direction:column;gap:10px;
+    transition:border-color .12s, transform .12s;
+  }
+  .tile:hover{border-color:var(--ink-soft);}
+  .tile[aria-pressed="true"]{border:2px solid var(--ink);padding:13px;}
+  .tile:focus-visible{outline:2px solid var(--accent);outline-offset:2px;}
+  .tile .glyph{
+    width:38px;height:38px;border-radius:10px;
+    display:flex;align-items:center;justify-content:center;
+    font-family:"Fredoka",sans-serif;font-weight:600;font-size:.95rem;color:#fff;
+  }
+  .tile .t-name{font-weight:600;font-size:.95rem;}
+  .tile .t-count{font-size:.78rem;color:var(--ink-soft);margin-top:-6px;}
+  .preview-banner{background:var(--accent);color:var(--accent-ink);font-size:.84rem;font-weight:600;text-align:center;padding:8px 12px;border-radius:10px;margin-bottom:16px;}
+  .filter-group[hidden]{display:none;}
+  .pdf-group{display:flex;gap:6px;}
+  .pdf-btn.small{padding:8px 11px;}
 </style>
 
 <div id="lockScreen">
   <form class="lock-card" id="lockForm" autocomplete="off">
     <div class="mark" aria-hidden="true"></div>
-    <h2>LEGO Education Catalog</h2>
+    <h2>Little Scientists Library</h2>
     <p>Enter the access password to view the instructions.</p>
     <input id="lockInput" type="password" placeholder="Password" autocomplete="off" autocapitalize="off" spellcheck="false" inputmode="text">
     <button type="submit">Unlock</button>
@@ -369,16 +397,20 @@
 </div>
 
 <div class="wrap" id="appRoot" hidden>
+  
   <header class="top">
     <div class="brand">
       <div class="mark" aria-hidden="true"></div>
       <div>
-        <h1>LEGO Education Catalog</h1>
-        <p>Instructions for activities, courses and events &mdash; Little Scientists</p>
+        <h1>Little Scientists Library</h1>
+        <p>Building and coding instructions &mdash; Little Scientists</p>
       </div>
     </div>
     <div class="count-pill"><strong id="resultCount">0</strong> instructions found</div>
   </header>
+
+  <h2 class="tiles-label">Choose a platform</h2>
+  <div class="tiles" id="tiles"></div>
 
   <section class="controls">
     <div class="search-row">
@@ -386,26 +418,12 @@
       <button id="resetBtn" type="button">Reset filters</button>
     </div>
     <div class="filter-groups">
-      <div class="filter-group">
-        <h3>Age</h3>
-        <div class="chip-row" id="ageChips" data-group="age"></div>
-      </div>
-      <div class="filter-group">
-        <h3>Difficulty</h3>
-        <div class="chip-row" id="diffChips" data-group="difficulty"></div>
-      </div>
-      <div class="filter-group">
-        <h3>Kit used</h3>
-        <div class="chip-row" id="kitChips" data-group="kit"></div>
-      </div>
-      <div class="filter-group">
-        <h3>Language</h3>
-        <div class="chip-row" id="langChips" data-group="language"></div>
-      </div>
-      <div class="filter-group">
-        <h3>Theme</h3>
-        <div class="chip-row" id="themeChips" data-group="theme"></div>
-      </div>
+      <div class="filter-group"><h3>Age</h3><div class="chip-row" id="ageChips"></div></div>
+      <div class="filter-group"><h3>Difficulty</h3><div class="chip-row" id="diffChips"></div></div>
+      <div class="filter-group" id="kitGroup"><h3>Kit / board</h3><div class="chip-row" id="kitChips"></div></div>
+      <div class="filter-group" id="langGroup"><h3>Programming</h3><div class="chip-row" id="langChips"></div></div>
+      <div class="filter-group" id="docLangGroup"><h3>Instructions language</h3><div class="chip-row" id="docLangChips"></div></div>
+      <div class="filter-group" id="themeGroup"><h3>Theme</h3><div class="chip-row" id="themeChips"></div></div>
     </div>
   </section>
 
@@ -418,12 +436,6 @@
     <h3 id="emptyTitle">No instructions found</h3>
     <p id="emptyHint">Try removing a filter or changing your search.</p>
   </div>
-
-  <p class="note">
-    <strong>To add PDF instructions</strong>, send them to Claude in this same conversation
-    (or a new one, pointing to this page): they'll be uploaded and the page updated with
-    links to the real files.
-  </p>
 </div>
 
 <script>
@@ -458,40 +470,41 @@
   var storedHash = null;
   try { storedHash = localStorage.getItem(STORAGE_KEY); } catch(e) {}
 
-  // Auto-unlock via ?key=<password> in the URL (used by the QR code)
+  // Auto-unlock via a QR-code link that carries the current password in the URL
+  // (?key=...), so scanning the code skips typing the password entirely, while
+  // still requiring today's valid password — a link printed/shared for an older,
+  // now-reset password simply stops working, same as manual entry would.
   var urlKey = null;
-  try { urlKey = new URLSearchParams(window.location.search).get("key"); } catch(e) {}
+  try {
+    var params = new URLSearchParams(window.location.search);
+    urlKey = params.get("key");
+  } catch(e) {}
 
-  function cleanUrl(){
+  function cleanKeyFromUrl(){
     try {
-      var params = new URLSearchParams(window.location.search);
-      params.delete("key");
-      var qs = params.toString();
-      history.replaceState(null, "", window.location.pathname + (qs ? "?" + qs : "") + window.location.hash);
+      var url = new URL(window.location.href);
+      url.searchParams.delete("key");
+      window.history.replaceState({}, "", url.pathname + url.search + url.hash);
     } catch(e) {}
-  }
-
-  function showLock(){
-    lock();
-    if (lockInput) { setTimeout(function(){ lockInput.focus(); }, 50); }
   }
 
   if (storedHash === EXPECTED_HASH){
     unlock();
-    if (urlKey !== null) { cleanUrl(); }
+    if (urlKey) cleanKeyFromUrl();
   } else if (urlKey){
-    lock();
-    sha256Hex(urlKey.trim()).then(function(hash){
-      cleanUrl();
+    sha256Hex(urlKey).then(function(hash){
+      cleanKeyFromUrl();
       if (hash === EXPECTED_HASH){
         try { localStorage.setItem(STORAGE_KEY, hash); } catch(e) {}
         unlock();
       } else {
-        showLock();
+        lock();
+        if (lockInput) { setTimeout(function(){ lockInput.focus(); }, 50); }
       }
-    }).catch(function(){ cleanUrl(); showLock(); });
+    });
   } else {
-    showLock();
+    lock();
+    if (lockInput) { setTimeout(function(){ lockInput.focus(); }, 50); }
   }
 
   if (lockForm){
@@ -517,323 +530,374 @@
 
 <script>
 (function(){
-  // ---------- sample data ----------
-  // age: [min, max] recommended years
   var instructions = [
     {
       title: "Bus",
+      platform: "LEGO",
       kit: "WeDo 2.0",
       language: ["WeDo", "Scratch"],
       difficulty: "Medium",
       age: [7, 11],
       theme: "City Builders",
       desc: "A motorized bus model that drives forward using a WeDo motor — a fun vehicle build.",
-      pdfUrl: "bus.pdf"
+      pdfs: {"English": "bus.pdf"}
     },
     {
       title: "Crane",
+      platform: "LEGO",
       kit: "WeDo 2.0",
       language: ["WeDo", "Scratch"],
       difficulty: "Medium",
       age: [7, 11],
       theme: "Epic Lego",
       desc: "A crane model with a motorized rotating arm for lifting and moving small loads.",
-      pdfUrl: "crane.pdf"
+      pdfs: {"English": "crane.pdf"}
     },
     {
       title: "Crane Car",
+      platform: "LEGO",
       kit: "WeDo 2.0",
       language: ["WeDo", "Scratch"],
       difficulty: "Medium",
       age: [7, 11],
       theme: "Epic Lego",
       desc: "A mobile crane on wheels, combining a driving motor with a lifting arm.",
-      pdfUrl: "crane-car.pdf"
+      pdfs: {"English": "crane-car.pdf"}
     },
     {
       title: "Flower",
+      platform: "LEGO",
       kit: "WeDo 2.0",
       language: ["WeDo"],
       difficulty: "Easy",
       age: [4, 7],
       theme: "Epic Lego",
       desc: "A flower that opens and closes its petals using a WeDo motor — a gentle first mechanism build.",
-      pdfUrl: "flower.pdf"
+      pdfs: {"English": "flower.pdf"}
     },
     {
       title: "Space Game",
+      platform: "LEGO",
       kit: "WeDo 2.0",
       language: ["WeDo"],
       difficulty: "Hard",
       age: [9, 11],
       theme: "Space",
       desc: "A space-themed challenge build combining motors and sensors for an interactive game.",
-      pdfUrl: "space-game.pdf"
+      pdfs: {"English": "space-game.pdf"}
     },
     {
       title: "Skate",
+      platform: "LEGO",
       kit: "WeDo 2.0",
       language: ["WeDo"],
       difficulty: "Easy",
       age: [4, 7],
       theme: "Epic Lego",
       desc: "A skateboard-style model that moves forward, powered by a WeDo motor.",
-      pdfUrl: "skate.pdf"
+      pdfs: {"English": "skate.pdf"}
     },
     {
       title: "2 Motors Car",
+      platform: "LEGO",
       kit: "WeDo 2.0",
       language: ["WeDo"],
       difficulty: "Medium",
       age: [7, 11],
       theme: "Epic Lego",
       desc: "A car model driven by two independent WeDo motors for more advanced control.",
-      pdfUrl: "2-motors-car.pdf"
+      pdfs: {"English": "2-motors-car.pdf"}
     },
     {
       title: "Milo 1",
+      platform: "LEGO",
       kit: "WeDo 2.0",
       language: ["WeDo"],
       difficulty: "Easy",
       age: [4, 7],
       theme: "Space",
       desc: "The first Milo the robot build: a friendly moving character powered by a WeDo motor.",
-      pdfUrl: "milo-1.pdf"
+      pdfs: {"English": "milo-1.pdf"}
     },
     {
       title: "Milo 2 – Distance Sensor",
+      platform: "LEGO",
       kit: "WeDo 2.0",
       language: ["WeDo"],
       difficulty: "Easy",
       age: [4, 7],
       theme: "Space",
       desc: "Milo the robot upgraded with a distance sensor that reacts when something comes close.",
-      pdfUrl: "milo-2-distance-sensor.pdf"
+      pdfs: {"English": "milo-2-distance-sensor.pdf"}
     },
     {
       title: "Milo 3 – Tilt Sensor",
+      platform: "LEGO",
       kit: "WeDo 2.0",
       language: ["WeDo"],
       difficulty: "Easy",
       age: [4, 7],
       theme: "Space",
       desc: "Milo the robot upgraded with a tilt sensor that reacts to movement and orientation.",
-      pdfUrl: "milo-3-tilt-sensor.pdf"
+      pdfs: {"English": "milo-3-tilt-sensor.pdf"}
     },
     {
       title: "Fan",
+      platform: "LEGO",
       kit: "WeDo 2.0",
       language: ["WeDo"],
       difficulty: "Easy",
       age: [4, 7],
       theme: "Space",
       desc: "A working fan model with spinning blades, powered by a WeDo motor.",
-      pdfUrl: "fan.pdf"
+      pdfs: {"English": "fan.pdf"}
     },
     {
       title: "Spy Robot",
+      platform: "LEGO",
       kit: "WeDo 2.0",
       language: ["WeDo"],
       difficulty: "Easy",
       age: [4, 7],
       theme: "Space",
       desc: "A robot on wheels that can be programmed to move and react like a little spy.",
-      pdfUrl: "spy-robot.pdf"
+      pdfs: {"English": "spy-robot.pdf"}
     },
     {
       title: "Duck",
+      platform: "LEGO",
       kit: "WeDo 2.0",
       language: ["WeDo"],
       difficulty: "Easy",
       age: [4, 7],
       theme: "Epic Lego",
       desc: "A duck model that waddles using a WeDo motor — a playful beginner build.",
-      pdfUrl: "duck.pdf"
+      pdfs: {"English": "duck.pdf"}
     },
     {
       title: "Printer",
+      platform: "LEGO",
       kit: "WeDo 2.0",
       language: ["WeDo"],
       difficulty: "Hard",
       age: [9, 11],
       theme: "Epic Lego",
       desc: "A model that mimics a printer's moving mechanism, powered by a WeDo motor.",
-      pdfUrl: "printer.pdf"
+      pdfs: {"English": "printer.pdf"}
     },
     {
       title: "Ski Lift",
+      platform: "LEGO",
       kit: "WeDo 2.0",
       language: ["WeDo", "Scratch"],
       difficulty: "Hard",
       age: [9, 11],
       theme: "Epic Lego",
       desc: "A working ski lift model with cabins that move along a cable, driven by a motor.",
-      pdfUrl: "skilift.pdf"
+      pdfs: {"English": "skilift.pdf"}
     },
     {
       title: "Helicopter",
+      platform: "LEGO",
       kit: "WeDo 2.0",
       language: ["Scratch"],
       difficulty: "Medium",
       age: [7, 11],
       theme: "City Builders",
       desc: "A helicopter model with spinning rotor blades, programmed in Scratch.",
-      pdfUrl: "helicopter.pdf"
+      pdfs: {"English": "helicopter.pdf"}
     },
     {
       title: "Tesla",
+      platform: "LEGO",
       kit: "WeDo 2.0",
       language: ["WeDo", "Scratch"],
       difficulty: "Medium",
       age: [7, 11],
       theme: "City Builders",
       desc: "A car model inspired by a Tesla, driven by a WeDo motor and programmable in WeDo or Scratch.",
-      pdfUrl: "tesla.pdf"
+      pdfs: {"English": "tesla.pdf"}
     },
     {
       title: "Moon Base",
+      platform: "LEGO",
       kit: "WeDo 2.0",
       language: ["WeDo", "Scratch"],
       difficulty: "Medium",
       age: [7, 11],
       theme: "Space",
       desc: "A lunar base model with a moving element, part of a space exploration theme.",
-      pdfUrl: "moon-base.pdf"
+      pdfs: {"English": "moon-base.pdf"}
     },
     {
       title: "Robotic Arm",
+      platform: "LEGO",
       kit: "WeDo 2.0",
       language: ["WeDo", "Scratch"],
       difficulty: "Hard",
       age: [9, 11],
       theme: "Space",
       desc: "A robotic arm that can be programmed to move and grab small objects.",
-      pdfUrl: "robotic-arm.pdf"
+      pdfs: {"English": "robotic-arm.pdf"}
     }
   ];
 
+
   var AGE_BANDS = [[4,7,"4–7"],[7,9,"7–9"],[9,11,"9–11"],[11,13,"11–13"],[13,15,"13–15"]];
   var DIFFS = ["Easy","Medium","Hard"];
+  var PLATFORMS = [
+    {name:"LEGO",glyph:"LE",color:"#d6392f"},
+    {name:"micro:bit",glyph:"mb",color:"#1f9d63"},
+    {name:"Makey Makey",glyph:"MM",color:"#8a4fd1"},
+    {name:"Arduino",glyph:"Ar",color:"#0f8a96"},
+    {name:"Scratch",glyph:"Sc",color:"#e8870e"},
+    {name:"ScratchJr",glyph:"Jr",color:"#d1498a"},
+    {name:"Python",glyph:"Py",color:"#2f6fb5"},
+    {name:"JavaScript",glyph:"JS",color:"#a58a00"}
+  ];
 
   function uniqueSorted(values){
-    var seen = {};
-    var out = [];
-    values.forEach(function(v){
-      if(!seen[v]){ seen[v] = true; out.push(v); }
-    });
+    var seen = {}, out = [];
+    values.forEach(function(v){ if(v && !seen[v]){ seen[v] = true; out.push(v); } });
     return out.sort();
   }
 
-  var KITS = uniqueSorted(instructions.map(function(i){ return i.kit; }));
-  var LANGS = uniqueSorted(instructions.reduce(function(acc,i){ return acc.concat(i.language); }, []));
-  var THEMES = uniqueSorted(instructions.map(function(i){ return i.theme; }).filter(Boolean));
-
   var state = {
-    query: "",
-    age: new Set(),
-    difficulty: new Set(),
-    kit: new Set(),
-    language: new Set(),
-    theme: new Set()
+    query:"", platform:null,
+    age:new Set(), difficulty:new Set(), kit:new Set(), language:new Set(), docLang:new Set(), theme:new Set()
   };
 
-  function makeChips(container, items, group, labelFn){
-    labelFn = labelFn || function(x){ return x; };
+  function inPlatform(item){ return !state.platform || item.platform === state.platform; }
+
+  function makeChips(container, items, group){
+    container.innerHTML = "";
     items.forEach(function(item){
+      var key = typeof item === "object" ? item.key : item;
+      var label = typeof item === "object" ? item.label : item;
       var btn = document.createElement("button");
       btn.type = "button";
       btn.className = "chip";
-      btn.setAttribute("aria-pressed", "false");
-      btn.textContent = labelFn(item);
+      btn.setAttribute("aria-pressed", state[group].has(key) ? "true" : "false");
+      btn.textContent = label;
       btn.addEventListener("click", function(){
-        var key = typeof item === "object" ? item.key : item;
-        if(state[group].has(key)){
-          state[group].delete(key);
-          btn.setAttribute("aria-pressed","false");
-        } else {
-          state[group].add(key);
-          btn.setAttribute("aria-pressed","true");
-        }
+        if(state[group].has(key)){ state[group].delete(key); btn.setAttribute("aria-pressed","false"); }
+        else { state[group].add(key); btn.setAttribute("aria-pressed","true"); }
         render();
       });
       container.appendChild(btn);
     });
   }
 
-  makeChips(document.getElementById("ageChips"), AGE_BANDS.map(function(b){ return {key:b[0]+"-"+b[1], min:b[0], max:b[1], label:b[2]}; }), "age", function(b){ return b.label; });
+  function rebuildChips(){
+    var pool = instructions.filter(inPlatform);
+    var kits = uniqueSorted(pool.map(function(i){ return i.kit; }));
+    var langs = uniqueSorted(pool.reduce(function(a,i){ return a.concat(i.language); }, []));
+    var themes = uniqueSorted(pool.map(function(i){ return i.theme; }));
+    var docLangs = uniqueSorted(pool.reduce(function(a,i){ return a.concat(Object.keys(i.pdfs)); }, []));
+    ["kit","language","docLang","theme"].forEach(function(g){ state[g].clear(); });
+    makeChips(document.getElementById("kitChips"), kits, "kit");
+    makeChips(document.getElementById("langChips"), langs, "language");
+    makeChips(document.getElementById("docLangChips"), docLangs, "docLang");
+    makeChips(document.getElementById("themeChips"), themes, "theme");
+    document.getElementById("kitGroup").hidden = kits.length < 2;
+    document.getElementById("langGroup").hidden = langs.length < 2;
+    document.getElementById("docLangGroup").hidden = docLangs.length < 2;
+    document.getElementById("themeGroup").hidden = themes.length < 2;
+  }
+
+  function buildTiles(){
+    var box = document.getElementById("tiles");
+    box.innerHTML = "";
+    var all = {name:null,label:"All",glyph:"All",color:"#1c2340",n:instructions.length};
+    var tiles = [all];
+    PLATFORMS.forEach(function(p){
+      var n = instructions.filter(function(i){ return i.platform === p.name; }).length;
+      if(n > 0) tiles.push({name:p.name,label:p.name,glyph:p.glyph,color:p.color,n:n});
+    });
+    tiles.forEach(function(t){
+      var b = document.createElement("button");
+      b.type = "button";
+      b.className = "tile";
+      b.setAttribute("aria-pressed", state.platform === t.name ? "true" : "false");
+      b.innerHTML = '<span class="glyph" style="background:' + t.color + '">' + t.glyph + '</span>' +
+        '<span class="t-name">' + t.label + '</span>' +
+        '<span class="t-count">' + t.n + (t.n === 1 ? ' instruction' : ' instructions') + '</span>';
+      b.addEventListener("click", function(){
+        state.platform = t.name;
+        buildTiles();
+        rebuildChips();
+        render();
+      });
+      box.appendChild(b);
+    });
+  }
+
+  makeChips(document.getElementById("ageChips"), AGE_BANDS.map(function(b){ return {key:b[0]+"-"+b[1], label:b[2]}; }), "age");
   makeChips(document.getElementById("diffChips"), DIFFS, "difficulty");
-  makeChips(document.getElementById("kitChips"), KITS, "kit");
-  makeChips(document.getElementById("langChips"), LANGS, "language");
-  makeChips(document.getElementById("themeChips"), THEMES, "theme");
 
   var searchInput = document.getElementById("searchInput");
-  searchInput.addEventListener("input", function(){
-    state.query = searchInput.value.trim().toLowerCase();
-    render();
-  });
+  searchInput.addEventListener("input", function(){ state.query = searchInput.value.trim().toLowerCase(); render(); });
 
   document.getElementById("resetBtn").addEventListener("click", function(){
-    state.query = "";
-    searchInput.value = "";
-    ["age","difficulty","kit","language","theme"].forEach(function(g){ state[g].clear(); });
-    document.querySelectorAll(".chip[aria-pressed='true']").forEach(function(c){ c.setAttribute("aria-pressed","false"); });
-    render();
+    state.query = ""; searchInput.value = ""; state.platform = null;
+    ["age","difficulty"].forEach(function(g){ state[g].clear(); });
+    document.querySelectorAll("#ageChips .chip, #diffChips .chip").forEach(function(c){ c.setAttribute("aria-pressed","false"); });
+    buildTiles(); rebuildChips(); render();
   });
 
   function matchesAge(item){
     if(state.age.size === 0) return true;
-    var matched = false;
+    var ok = false;
     state.age.forEach(function(key){
-      var parts = key.split("-");
-      var bMin = parseInt(parts[0],10), bMax = parseInt(parts[1],10);
-      if(item.age[0] <= bMax && item.age[1] >= bMin) matched = true;
+      var p = key.split("-"), lo = parseInt(p[0],10), hi = parseInt(p[1],10);
+      if(item.age[0] <= hi && item.age[1] >= lo) ok = true;
     });
-    return matched;
+    return ok;
   }
-
-  function matchesSet(setObj, value){
-    return setObj.size === 0 || setObj.has(value);
-  }
-
-  function matchesAny(setObj, values){
-    return setObj.size === 0 || values.some(function(v){ return setObj.has(v); });
-  }
+  function matchesSet(s, v){ return s.size === 0 || s.has(v); }
+  function matchesAny(s, vs){ return s.size === 0 || vs.some(function(v){ return s.has(v); }); }
 
   function filtered(){
     return instructions.filter(function(item){
+      if(!inPlatform(item)) return false;
       if(state.query){
-        var hay = (item.title + " " + item.desc).toLowerCase();
+        var hay = (item.title + " " + item.desc + " " + item.kit + " " + item.language.join(" ") + " " + Object.keys(item.pdfs).join(" ") + " " + (item.theme||"")).toLowerCase();
         if(hay.indexOf(state.query) === -1) return false;
       }
-      if(!matchesAge(item)) return false;
-      if(!matchesSet(state.difficulty, item.difficulty)) return false;
-      if(!matchesSet(state.kit, item.kit)) return false;
-      if(!matchesAny(state.language, item.language)) return false;
-      if(!matchesSet(state.theme, item.theme)) return false;
-      return true;
+      return matchesAge(item) && matchesSet(state.difficulty, item.difficulty) &&
+        matchesSet(state.kit, item.kit) && matchesAny(state.language, item.language) && matchesAny(state.docLang, Object.keys(item.pdfs)) &&
+        matchesSet(state.theme, item.theme);
     });
   }
 
   var grid = document.getElementById("grid");
   var emptyState = document.getElementById("emptyState");
-  var emptyTitle = document.getElementById("emptyTitle");
-  var emptyHint = document.getElementById("emptyHint");
   var resultCount = document.getElementById("resultCount");
   var resultsSummary = document.getElementById("resultsSummary");
 
   function cardHtml(item){
-    var pdf = item.pdfUrl
-      ? '<a class="pdf-btn" href="' + item.pdfUrl + '" target="_blank" rel="noopener">Open PDF</a>'
-      : '<span class="pdf-btn disabled">PDF coming soon</span>';
+    var codes = {English:"EN", German:"DE", Italian:"IT"};
+    var langs = Object.keys(item.pdfs);
+    var pdf;
+    if(langs.length === 0){
+      pdf = '<span class="pdf-btn disabled">PDF coming soon</span>';
+    } else if(langs.length === 1){
+      pdf = '<a class="pdf-btn" href="' + item.pdfs[langs[0]] + '" target="_blank" rel="noopener">Open PDF</a>';
+    } else {
+      pdf = '<span class="pdf-group">' + langs.map(function(l){
+        return '<a class="pdf-btn small" title="' + l + '" href="' + item.pdfs[l] + '" target="_blank" rel="noopener">' + (codes[l] || l) + '</a>';
+      }).join('') + '</span>';
+    }
     return (
       '<article class="card">' +
         '<h2>' + item.title + '</h2>' +
         '<p class="desc">' + item.desc + '</p>' +
         '<div class="badges">' +
           (item.isSample ? '<span class="badge example">Example</span>' : '') +
+          '<span class="badge">' + item.platform + '</span>' +
           '<span class="badge">' + item.age[0] + '–' + item.age[1] + ' yrs</span>' +
           '<span class="badge diff-' + item.difficulty + '">' + item.difficulty + '</span>' +
-          '<span class="badge">' + item.kit + '</span>' +
+          (item.kit && item.kit !== "No hardware" ? '<span class="badge">' + item.kit + '</span>' : '') +
           item.language.map(function(l){ return '<span class="badge">' + l + '</span>'; }).join('') +
         '</div>' +
         '<footer>' +
@@ -846,24 +910,19 @@
 
   function render(){
     var items = filtered();
+    var total = instructions.filter(inPlatform).length;
     resultCount.textContent = items.length;
-    resultsSummary.textContent = items.length === instructions.length
-      ? "All instructions"
-      : items.length + " of " + instructions.length + " instructions";
+    resultsSummary.textContent = items.length === total
+      ? (state.platform ? "All " + state.platform + " instructions" : "All instructions")
+      : items.length + " of " + total + " instructions";
     grid.innerHTML = items.map(cardHtml).join("");
     emptyState.hidden = items.length !== 0;
     grid.hidden = items.length === 0;
-    if (items.length === 0){
-      if (instructions.length === 0){
-        emptyTitle.textContent = "No instructions yet";
-        emptyHint.textContent = "Send PDF instructions to Claude to start filling this catalog.";
-      } else {
-        emptyTitle.textContent = "No instructions found";
-        emptyHint.textContent = "Try removing a filter or changing your search.";
-      }
-    }
   }
 
+  document.addEventListener("click", function(e){ var a=e.target.closest("a.pdf-btn"); if(a && false) e.preventDefault(); });
+  buildTiles();
+  rebuildChips();
   render();
 })();
 </script>
