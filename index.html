@@ -809,6 +809,94 @@
       theme: "Robotics",
       desc: "Connect an LED and an expansion board to the micro:bit and program them: the hardware lessons of the Minigolf challenge (Module 2).",
       pdfs: {"English": "microbit-hardware-en.pdf", "German": "microbit-hardware-de.pdf"}
+    },
+    {
+      title: "Electric Car",
+      platform: "LEGO",
+      kit: "SPIKE Prime",
+      language: ["Scratch"],
+      difficulty: "Medium",
+      age: [9, 15],
+      theme: "City Builders",
+      desc: "Build a four-wheeled electric car with SPIKE Prime and program it to drive.",
+      pdfs: {"German": "spike-prime-electric-car-de.pdf"}
+    },
+    {
+      title: "Breakdancer",
+      platform: "LEGO",
+      kit: "SPIKE Prime",
+      language: ["Scratch"],
+      difficulty: "Easy",
+      age: [9, 15],
+      theme: "City Builders",
+      desc: "Build a dancing robot with moving arms and legs, and program its moves.",
+      pdfs: {"German": "spike-prime-breakdancer-de.pdf"}
+    },
+    {
+      title: "Self-Parking Car",
+      platform: "LEGO",
+      kit: "SPIKE Prime",
+      language: ["Scratch"],
+      difficulty: "Easy",
+      age: [9, 15],
+      theme: "City Builders",
+      desc: "Build a small car that can park itself, based on the Mindstorms Hot Rod idea.",
+      pdfs: {"German": "spike-prime-self-parking-car-de.pdf"}
+    },
+    {
+      title: "Delivery Car",
+      platform: "LEGO",
+      kit: "SPIKE Prime",
+      language: ["Scratch"],
+      difficulty: "Medium",
+      age: [9, 15],
+      theme: "City Builders",
+      desc: "Build a driverless electric delivery car that brings a package to its destination.",
+      pdfs: {"German": "spike-prime-delivery-car-de.pdf"}
+    },
+    {
+      title: "Fire Truck",
+      platform: "LEGO",
+      kit: "SPIKE Prime",
+      language: ["Scratch"],
+      difficulty: "Medium",
+      age: [9, 15],
+      theme: "City Builders",
+      desc: "Build a fire station and a fire-fighting vehicle with a moving arm.",
+      pdfs: {"German": "spike-prime-fire-truck-de.pdf"}
+    },
+    {
+      title: "Basketball",
+      platform: "LEGO",
+      kit: "SPIKE Prime",
+      language: ["Scratch"],
+      difficulty: "Easy",
+      age: [9, 15],
+      theme: "City Builders",
+      desc: "Build and program a basketball game with SPIKE Prime motors and sensors.",
+      pdfs: {"German": "spike-prime-basketball-de.pdf"}
+    },
+    {
+      title: "Carousel",
+      platform: "LEGO",
+      kit: "SPIKE Prime",
+      language: ["Scratch"],
+      difficulty: "Hard",
+      age: [9, 15],
+      theme: "City Builders",
+      desc: "Build a fairground carousel with seats for LEGO minifigures, driven by a motor.",
+      pdfs: {"German": "spike-prime-carousel-de.pdf"}
+    },
+    {
+      title: "Racing Car Openproject",
+      platform: "LEGO",
+      kit: "SPIKE Prime",
+      language: ["Scratch"],
+      difficulty: "Hard",
+      age: [9, 15],
+      theme: "City Builders",
+      desc: "An open project: build and personalize a two-motor race car, then modify the base code to finish a taped track in the shortest time.",
+      pdfs: {"German": "spike-prime-racing-car-openproject-de.pdf"}
     }
   ];
 
@@ -997,7 +1085,7 @@
     if(langs.length === 0){
       pdf = '<span class="pdf-btn disabled">PDF coming soon</span>';
     } else if(langs.length === 1){
-      pdf = '<a class="pdf-btn" href="' + item.pdfs[langs[0]] + '" target="_blank" rel="noopener">Open PDF</a>';
+      pdf = '<a class="pdf-btn" href="' + item.pdfs[langs[0]] + '" target="_blank" rel="noopener">Open PDF' + (langs[0] === "English" ? '' : ' (' + (codes[langs[0]] || langs[0]) + ')') + '</a>';
     } else {
       pdf = '<span class="pdf-group">' + langs.map(function(l){
         return '<a class="pdf-btn small" title="' + l + '" href="' + item.pdfs[l] + '" target="_blank" rel="noopener">' + (codes[l] || l) + '</a>';
